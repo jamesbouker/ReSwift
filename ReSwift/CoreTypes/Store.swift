@@ -81,6 +81,7 @@ open class Store<State: StateType>: StoreType {
         if let state = state {
             self.state = state
         } else {
+            self.state = Storage.saved("states.json", as: State.self)
             dispatch(ReSwiftInit())
         }
     }
@@ -136,6 +137,17 @@ open class Store<State: StateType>: StoreType {
         if let index = subscriptions.index(where: { return $0.subscriber === subscriber }) {
             subscriptions.remove(at: index)
         }
+    }
+
+    // swiftlint:disable:next identifier_name
+    open func silentDispatch(action: Action, state: State) -> State {
+        self.state = state
+        let newState = reducer(action, self.state)
+        self.state = newState
+        if action is ReSwiftPersistState {
+            Storage.save(self.state, filename: "states.json")
+        }
+        return self.state
     }
 
     // swiftlint:disable:next identifier_name
